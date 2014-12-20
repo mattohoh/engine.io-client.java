@@ -14,8 +14,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
 public class PollingXHR extends Polling {
@@ -142,11 +140,12 @@ public class PollingXHR extends Polling {
         public static final String EVENT_REQUEST_HEADERS = "requestHeaders";
         public static final String EVENT_RESPONSE_HEADERS = "responseHeaders";
 
-        private static final ExecutorService xhrService = Executors.newCachedThreadPool();
-
         private String method;
         private String uri;
+
+        // data is always a binary
         private byte[] data;
+
         private SSLContext sslContext;
         private HttpURLConnection xhr;
 
@@ -187,12 +186,10 @@ public class PollingXHR extends Polling {
             xhr.setRequestProperty("Connection", "Close");
 
             logger.fine(String.format("sending xhr with url %s | data %s", this.uri, this.data));
-            xhrService.submit(new Runnable() {
+            new Thread(new Runnable() {
                 @Override
                 public void run() {
                     OutputStream output = null;
-                    InputStream input = null;
-                    BufferedReader reader = null;
                     try {
                         if (self.data != null) {
                             xhr.setFixedLengthStreamingMode(self.data.length);
@@ -202,6 +199,7 @@ public class PollingXHR extends Polling {
                         }
 
                         Map<String, String> headers = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
+
                         Map<String, List<String>> xhrHeaderFields = xhr.getHeaderFields();
                         if(xhrHeaderFields != null) {
                             for (String key : xhrHeaderFields.keySet()) {
@@ -209,37 +207,12 @@ public class PollingXHR extends Polling {
                                 headers.put(key, xhr.getHeaderField(key));
                             }
                         }
+
                         self.onResponseHeaders(headers);
 
                         final int statusCode = xhr.getResponseCode();
                         if (HttpURLConnection.HTTP_OK == statusCode) {
-                            String contentType = xhr.getContentType();
-                            if ("application/octet-stream".equalsIgnoreCase(contentType)) {
-                                input = new BufferedInputStream(xhr.getInputStream());
-                                List<byte[]> buffers = new ArrayList<byte[]>();
-                                int capacity = 0;
-                                int len = 0;
-                                byte[] buffer = new byte[1024];
-                                while ((len = input.read(buffer)) > 0) {
-                                    byte[] _buffer = new byte[len];
-                                    System.arraycopy(buffer, 0, _buffer, 0, len);
-                                    buffers.add(_buffer);
-                                    capacity += len;
-                                }
-                                ByteBuffer data = ByteBuffer.allocate(capacity);
-                                for (byte[] b : buffers) {
-                                    data.put(b);
-                                }
-                                self.onData(data.array());
-                            } else {
-                                String line;
-                                StringBuilder data = new StringBuilder();
-                                reader = new BufferedReader(new InputStreamReader(xhr.getInputStream()));
-                                while ((line = reader.readLine()) != null) {
-                                    data.append(line);
-                                }
-                                self.onData(data.toString());
-                            }
+                            self.onLoad();
                         } else {
                             self.onError(new IOException(Integer.toString(statusCode)));
                         }
@@ -249,15 +222,9 @@ public class PollingXHR extends Polling {
                         try {
                             if (output != null) output.close();
                         } catch (IOException e) {}
-                        try {
-                            if (input != null) input.close();
-                        } catch (IOException e) {}
-                        try {
-                            if (reader != null) reader.close();
-                        } catch (IOException e) {}
                     }
                 }
-            });
+            }).start();
         }
 
         private void onSuccess() {
@@ -297,6 +264,48 @@ public class PollingXHR extends Polling {
             xhr = null;
         }
 
+        private void onLoad() {
+            InputStream input = null;
+            BufferedReader reader = null;
+            String contentType = xhr.getContentType();
+            try {
+                if ("application/octet-stream".equalsIgnoreCase(contentType)) {
+                    input = new BufferedInputStream(this.xhr.getInputStream());
+                    List<byte[]> buffers = new ArrayList<byte[]>();
+                    int capacity = 0;
+                    int len = 0;
+                    byte[] buffer = new byte[1024];
+                    while ((len = input.read(buffer)) > 0) {
+                        byte[] _buffer = new byte[len];
+                        System.arraycopy(buffer, 0, _buffer, 0, len);
+                        buffers.add(_buffer);
+                        capacity += len;
+                    }
+                    ByteBuffer data = ByteBuffer.allocate(capacity);
+                    for (byte[] b : buffers) {
+                        data.put(b);
+                    }
+                    this.onData(data.array());
+                } else {
+                    String line;
+                    StringBuilder data = new StringBuilder();
+                    reader = new BufferedReader(new InputStreamReader(xhr.getInputStream()));
+                    while ((line = reader.readLine()) != null) {
+                        data.append(line);
+                    }
+                    this.onData(data.toString());
+                }
+            } catch (IOException e) {
+                this.onError(e);
+            } finally {
+                try {
+                    if (input != null) input.close();
+                } catch (IOException e) {}
+                try {
+                    if (reader != null) reader.close();
+                } catch (IOException e) {}
+            }
+        }
         public void abort() {
             this.cleanup();
         }

@@ -10,7 +10,7 @@ import java.util.concurrent.*;
 
 public abstract class Connection {
 
-    final static int TIMEOUT = 3000;
+    final static int TIMEOUT = 10000;
     final static int PORT = 3000;
 
     private Process serverProcess;
@@ -65,8 +65,8 @@ public abstract class Connection {
     public void stopServer() throws InterruptedException {
         System.out.println("Stopping server ...");
         serverProcess.destroy();
-        serverOutout.cancel(true);
-        serverError.cancel(true);
+        serverOutout.cancel(false);
+        serverError.cancel(false);
         serverService.shutdown();
         serverService.awaitTermination(3000, TimeUnit.MILLISECONDS);
     }
