@@ -184,6 +184,7 @@ public class PollingXHR extends Polling {
             for (Map.Entry<String, String> header : headers.entrySet()) {
                 xhr.setRequestProperty(header.getKey(), header.getValue());
             }
+            xhr.setRequestProperty("Connection", "Close");
 
             logger.fine(String.format("sending xhr with url %s | data %s", this.uri, this.data));
             xhrService.submit(new Runnable() {
@@ -201,9 +202,12 @@ public class PollingXHR extends Polling {
                         }
 
                         Map<String, String> headers = new TreeMap<String, String>(String.CASE_INSENSITIVE_ORDER);
-                        for (String key : xhr.getHeaderFields().keySet()) {
-                            if (key == null) continue;
-                            headers.put(key, xhr.getHeaderField(key));
+                        Map<String, List<String>> xhrHeaderFields = xhr.getHeaderFields();
+                        if(xhrHeaderFields != null) {
+                            for (String key : xhrHeaderFields.keySet()) {
+                                if (key == null) continue;
+                                headers.put(key, xhr.getHeaderField(key));
+                            }
                         }
                         self.onResponseHeaders(headers);
 
