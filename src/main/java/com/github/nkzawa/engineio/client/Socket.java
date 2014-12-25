@@ -701,8 +701,6 @@ public class Socket extends Emitter {
                             self.onClose("forced close");
                             logger.fine("socket closing - telling transport to close");
                             self.transport.close();
-                    		// added by matt
-                   			self.heartbeatScheduler.shutdownNow();
                         }
                     };
 
