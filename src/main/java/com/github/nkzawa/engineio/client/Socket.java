@@ -484,6 +484,7 @@ public class Socket extends Emitter {
             }
         } else {
             logger.fine(String.format("packet received with socket readyState '%s'", this.readyState));
+            this.flush(); // added by Matt
         }
     }
 
