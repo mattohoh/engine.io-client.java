@@ -94,7 +94,7 @@ public class Socket extends Emitter {
      */
     public static final int protocol = Parser.protocol;
 
-    public static boolean priorWebsocketSuccess = false;
+    private static boolean priorWebsocketSuccess = false;
 
     private static SSLContext defaultSSLContext;
 
@@ -103,7 +103,7 @@ public class Socket extends Emitter {
     private boolean timestampRequests;
     private boolean upgrading;
     private boolean rememberUpgrade;
-    private int port;
+    /*package*/ int port;
     private int policyPort;
     private int prevBufferLen;
     private long pingInterval;
@@ -176,6 +176,9 @@ public class Socket extends Emitter {
                 }
                 if (pieces.length > 1) {
                     opts.port = Integer.parseInt(pieces[pieces.length - 1]);
+                } else if (opts.port == -1) {
+                    // if no port is specified manually, use the protocol default
+                    opts.port = this.secure ? 443 : 80;
                 }
             }
         }
@@ -252,13 +255,18 @@ public class Socket extends Emitter {
         opts.policyPort = this.policyPort;
         opts.socket = this;
 
+        Transport transport;
         if (WebSocket.NAME.equals(name)) {
-            return new WebSocket(opts);
+            transport = new WebSocket(opts);
         } else if (Polling.NAME.equals(name)) {
-            return new PollingXHR(opts);
+            transport = new PollingXHR(opts);
+        } else {
+            throw new RuntimeException();
         }
 
-        throw new RuntimeException();
+        this.emit(EVENT_TRANSPORT, transport);
+
+        return transport;
     }
 
     private void setTransport(Transport transport) {
@@ -271,8 +279,6 @@ public class Socket extends Emitter {
         }
 
         this.transport = transport;
-
-        self.emit(EVENT_TRANSPORT, transport);
 
         transport.on(Transport.EVENT_DRAIN, new Listener() {
             @Override
@@ -809,7 +815,13 @@ public class Socket extends Emitter {
                 filteredUpgrades.add(upgrade);
             }
         }
+
+
         return filteredUpgrades;
+    }
+
+    public String id() {
+        return this.id;
     }
 
     private ScheduledExecutorService getHeartbeatScheduler() {
