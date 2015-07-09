@@ -10,6 +10,7 @@ import com.github.nkzawa.parseqs.ParseQS;
 import com.github.nkzawa.thread.EventThread;
 import org.json.JSONException;
 
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLContext;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -97,6 +98,7 @@ public class Socket extends Emitter {
     private static boolean priorWebsocketSuccess = false;
 
     private static SSLContext defaultSSLContext;
+    private static HostnameVerifier defaultHostnameVerifier;
 
     private boolean secure;
     private boolean upgrade;
@@ -121,12 +123,17 @@ public class Socket extends Emitter {
     private Future pingTimeoutTimer;
     private Future pingIntervalTimer;
     private SSLContext sslContext;
+    private HostnameVerifier hostnameVerifier;
 
     private ReadyState readyState;
     private ScheduledExecutorService heartbeatScheduler;
 
     public static void setDefaultSSLContext(SSLContext sslContext) {
         defaultSSLContext = sslContext;
+    }
+
+    public static void setDefaultHostnameVerifier(HostnameVerifier hostnameVerifier) {
+        defaultHostnameVerifier = hostnameVerifier;
     }
 
     public Socket() {
@@ -197,6 +204,7 @@ public class Socket extends Emitter {
                 opts.transports : new String[]{Polling.NAME, WebSocket.NAME}));
         this.policyPort = opts.policyPort != 0 ? opts.policyPort : 843;
         this.rememberUpgrade = opts.rememberUpgrade;
+        this.hostnameVerifier = opts.hostnameVerifier != null ? opts.hostnameVerifier : defaultHostnameVerifier;
     }
 
     /**
@@ -254,6 +262,7 @@ public class Socket extends Emitter {
         opts.timestampParam = this.timestampParam;
         opts.policyPort = this.policyPort;
         opts.socket = this;
+        opts.hostnameVerifier = this.hostnameVerifier;
 
         Transport transport;
         if (WebSocket.NAME.equals(name)) {
@@ -331,7 +340,7 @@ public class Socket extends Emitter {
                             logger.fine(String.format("probe transport '%s' pong", name));
                             self.upgrading = true;
                             self.emit(EVENT_UPGRADING, transport[0]);
-                            if (null == transport) return;
+                            if (null == transport[0]) return;
                             Socket.priorWebsocketSuccess = WebSocket.NAME.equals(transport[0].name);
 
                             logger.fine(String.format("pausing current transport '%s'", self.transport.name));

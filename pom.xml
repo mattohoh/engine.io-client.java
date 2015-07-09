@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.nkzawa</groupId>
   <artifactId>engine.io-client</artifactId>
-  <version>0.4.2-SNAPSHOT</version>
+  <version>0.5.1</version>
   <packaging>jar</packaging>
   <name>engine.io-client</name>
   <description>Engine.IO Client Library for Java</description>
@@ -30,7 +30,7 @@
     <url>https://github.com/nkzawa/engine.io-client.java</url>
     <connection>scm:git:git://github.com/nkzawa/engine.io-client.java.git</connection>
     <developerConnection>scm:git:git@github.com:nkzawa/engine.io-client.java.git</developerConnection>
-    <tag>HEAD</tag>
+    <tag>engine.io-client-0.5.1</tag>
   </scm>
 
   <developers>
@@ -43,14 +43,14 @@
 
   <dependencies>
     <dependency>
+      <groupId>com.squareup.okhttp</groupId>
+      <artifactId>okhttp-ws</artifactId>
+      <version>2.4.0</version>
+    </dependency>
+    <dependency>
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
       <version>20090211</version>
-    </dependency>
-    <dependency>
-      <groupId>org.java-websocket</groupId>
-      <artifactId>Java-WebSocket</artifactId>
-      <version>1.3.0</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
