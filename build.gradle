@@ -17,3 +17,6 @@ dependencies {
     compile 'com.squareup.okhttp:okhttp-ws:2.4.0'
     compile 'org.json:json:20090211'
 }
+
+targetCompatibility = '1.7'
+sourceCompatibility = '1.7'
