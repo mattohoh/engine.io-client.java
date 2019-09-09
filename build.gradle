@@ -14,8 +14,8 @@ repositories {
 }
 
 dependencies {
-    compile 'com.squareup.okhttp:okhttp-ws:2.4.0'
-    compile 'org.json:json:20090211'
+    implementation 'org.json:json:20090211'
+    implementation 'com.squareup.okhttp3:okhttp:3.8.1'
 }
 
 targetCompatibility = '1.7'

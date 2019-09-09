@@ -1,12 +1,12 @@
-# Engine.IO-client.java
-[![Build Status](https://travis-ci.org/nkzawa/engine.io-client.java.png?branch=master)](https://travis-ci.org/nkzawa/engine.io-client.java)
+# Engine.IO-client Java
+[![Build Status](https://travis-ci.org/socketio/engine.io-client-java.png?branch=master)](https://travis-ci.org/socketio/engine.io-client-java)
 
-This is the Engine.IO Client Library for Java, which is simply ported from the [JavaScript client](https://github.com/LearnBoost/engine.io-client).
+This is the Engine.IO Client Library for Java, which is simply ported from the [JavaScript client](https://github.com/socketio/engine.io-client).
 
-See also: [Socket.IO-client.java](https://github.com/nkzawa/socket.io-client.java)
+See also: [Socket.IO-client Java](https://github.com/socketio/socket.io-client-java)
 
 ## Installation
-The latest artifact is available on Maven Central. To install manually, please refer dependencies to [pom.xml](https://github.com/nkzawa/engine.io-client.java/blob/master/pom.xml).
+The latest artifact is available on Maven Central. To install manually, please refer [dependencies](https://socketio.github.io/engine.io-client-java/dependencies.html).
 
 ### Maven
 Add the following dependency to your `pom.xml`.
@@ -14,9 +14,9 @@ Add the following dependency to your `pom.xml`.
 ```xml
 <dependencies>
   <dependency>
-    <groupId>com.github.nkzawa</groupId>
+    <groupId>io.socket</groupId>
     <artifactId>engine.io-client</artifactId>
-    <version>0.5.1</version>
+    <version>1.0.0</version>
   </dependency>
 </dependencies>
 ```
@@ -25,11 +25,19 @@ Add the following dependency to your `pom.xml`.
 Add it as a gradle dependency for Android Studio, in `build.gradle`:
 
 ```groovy
-compile 'com.github.nkzawa:engine.io-client:0.5.1'
+compile ('io.socket:engine.io-client:1.0.0') {
+  // excluding org.json which is provided by Android
+  exclude group: 'org.json', module: 'json'
+}
 ```
 
+#### Engine.IO Server 1.x suppport
+
+The current version of engine.io-client-java doesn't support engine.io server 1.x.
+Please use engine.io-client-java 0.9.x for that instead.
+
 ## Usage
-Engine.IO-client.java has the similar api with the JS client. You can use `Socket` to connect:
+Engine.IO-client Java has the similar api with the JS client. You can use `Socket` to connect:
 
 ```java
 socket = new Socket("ws://localhost");
@@ -91,12 +99,19 @@ socket.on(Socket.EVENT_OPEN, new Emitter.Listener() {
 Use custom SSL settings:
 
 ```java
+OkHttpClient okHttpClient = new OkHttpClient.Builder()
+    .hostnameVerifier(myHostnameVerifier)
+    .sslSocketFactory(mySSLContext.getSocketFactory(), myX509TrustManager)
+    .build();
+
 // default SSLContext for all sockets
-Socket.setDefaultSSLContext(mySSLContext);
+Socket.setDefaultOkHttpWebSocketFactory(okHttpClient);
+Socket.setDefaultOkHttpCallFactory(okHttpClient);
 
 // set as an option
 opts = new Socket.Options();
-opts.sslContext = mySSLContext;
+opts.callFactory = okHttpClient;
+opts.webSocketFactory = okHttpClient;
 socket = new Socket(opts);
 ```
 
@@ -104,7 +119,9 @@ socket = new Socket(opts);
 This library supports all of the features the JS client does, including events, options and upgrading transport. Android is fully supported.
 
 ### Extra features only for Java client
-Some features are added for simulating browser behavior like handling cookies.
+
+#### Accessing HTTP Headers
+You can access HTTP headers like the following.
 
 ```java
 socket.on(Socket.EVENT_TRANSPORT, new Emitter.listener() {
@@ -117,17 +134,17 @@ socket.on(Socket.EVENT_TRANSPORT, new Emitter.listener() {
       @Override
       public void call(Object... args) {
         @SuppressWarnings("unchecked")
-        Map<String, String> headers = (Map<String, String>)args[0];
-        // send cookies to server.
-        headers.put("Cookie", "foo=1;");
+        Map<String, List<String>> headers = (Map<String, List<String>>)args[0];
+        // send cookie value to server.
+        headers.put("Cookie", Arrays.asList("foo=1;"));
       }
     }).on(Transport.EVENT_RESPONSE_HEADERS, new Emitter.Listener() {
       @Override
       public void call(Object... args) {
         @SuppressWarnings("unchecked")
-        Map<String, String> headers = (Map<String, String>)args[0];
-        // get cookies from server.
-        String cookie = headers.get("Set-Cookie");
+        Map<String, List<String>> headers = (Map<String, List<String>>)args[0];
+        // receive cookie value from server.
+        String cookie = headers.get("Set-Cookie").get(0);
       }
     });
   }
@@ -136,7 +153,7 @@ socket.on(Socket.EVENT_TRANSPORT, new Emitter.listener() {
 
 See the Javadoc for more details.
 
-http://nkzawa.github.io/engine.io-client.java/apidocs/
+http://socketio.github.io/engine.io-client-java/apidocs/
 
 ## License
 
