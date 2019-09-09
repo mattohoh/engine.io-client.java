@@ -136,7 +136,11 @@ public class Parser {
         final StringBuilder result = new StringBuilder();
 
         for (Packet packet : packets) {
-            encodePacket(packet, false, new EncodeCallback() {
+            /*
+                matt modified utf8encode=true
+                socket.io 1.7.4 decode utf8 message by default
+            */
+            encodePacket(packet, true, new EncodeCallback() {
                 @Override
                 public void call(Object message) {
                     result.append(setLengthHeader((String)message));
