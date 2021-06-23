@@ -7,7 +7,9 @@
  * user guide available at http://gradle.org/docs/2.0/userguide/tutorial_java_projects.html
  */
 
-apply plugin: 'java'
+plugins {
+    id 'java-library'
+}
 
 repositories {
     mavenCentral()
@@ -18,5 +20,11 @@ dependencies {
     implementation 'com.squareup.okhttp3:okhttp:3.8.1'
 }
 
-targetCompatibility = '1.7'
-sourceCompatibility = '1.7'
+compileJava {
+    options.release = 8
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
+}
